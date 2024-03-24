@@ -2,4 +2,6 @@
 <resources>
   <color name="black">#FF000000</color>
   <color name="white">#FFFFFFFF</color>
+  <color name="equipment_product_background">#E06666</color>
+  <color name="food_product_background">#FFD965</color>
 </resources>

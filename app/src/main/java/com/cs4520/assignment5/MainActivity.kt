@@ -15,7 +15,10 @@ class MainActivity : ComponentActivity() {
             Surface(
                 modifier = Modifier.fillMaxSize(),
             ) {
-                AppNavHost(navController = rememberNavController())
+                AppNavHost(
+                    navController = rememberNavController(),
+                    startDestination = NavigationItem.Login.route
+                )
             }
         }
     }
