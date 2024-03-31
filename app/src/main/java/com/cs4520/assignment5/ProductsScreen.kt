@@ -41,11 +41,12 @@ fun ProductsScreen(
             )
         )
     }
-    viewModel.loadProducts()
+
     viewModel.productsResult.observe(LocalLifecycleOwner.current) { result ->
         productsResult.value = result
     }
 
+    viewModel.loadProducts(LocalLifecycleOwner.current)
     when (val result = productsResult.value) {
         is Result.Error -> Toast.makeText(LocalContext.current, result.msg, Toast.LENGTH_LONG)
             .show()
@@ -94,19 +95,19 @@ fun ProductListItem(product: Product) {
         ) {
             Text(
                 text = product.name,
-                fontSize = 20.sp,
+                fontSize = 18.sp,
                 modifier = Modifier.padding(PaddingValues(vertical = 4.dp))
             )
             if (product.expiryDate != null) {
                 Text(
                     text = product.expiryDate,
-                    fontSize = 20.sp,
+                    fontSize = 18.sp,
                     modifier = Modifier.padding(PaddingValues(vertical = 4.dp))
                 )
             }
             Text(
                 text = product.price.toString(),
-                fontSize = 20.sp,
+                fontSize = 18.sp,
                 modifier = Modifier.padding(PaddingValues(vertical = 4.dp))
             )
         }

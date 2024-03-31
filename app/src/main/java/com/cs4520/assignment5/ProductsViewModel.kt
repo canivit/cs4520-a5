@@ -1,9 +1,19 @@
 package com.cs4520.assignment5
 
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.util.concurrent.TimeUnit
 
 class ProductsViewModel(
     private val workManager: WorkManager,
@@ -12,21 +22,41 @@ class ProductsViewModel(
     private var _productsResult =
         MutableLiveData<Result<List<Product>>>(Result.Success(emptyList()))
     val productsResult: LiveData<Result<List<Product>>> = _productsResult
-    private val products = listOf(
-        Product("Apple", 5.0, "2020-01-01", Product.Type.Food),
-        Product("Pencil", 3.0, null, Product.Type.Equipment),
-        Product("Banana", 4.0, "2020-01-01", Product.Type.Food),
-        Product("Calculator", 9.0, null, Product.Type.Equipment),
-        Product("Apple2", 5.0, "2020-01-01", Product.Type.Food),
-        Product("Pencil2", 3.0, null, Product.Type.Equipment),
-        Product("Banana2", 4.0, "2020-01-01", Product.Type.Food),
-        Product("Calculator2", 9.0, null, Product.Type.Equipment),
-        Product("Apple3", 5.0, "2020-01-01", Product.Type.Food),
-        Product("Pencil3", 3.0, null, Product.Type.Equipment),
-        Product("Banana3", 4.0, "2020-01-01", Product.Type.Food),
-        Product("Calculator3", 9.0, null, Product.Type.Equipment),
-    )
-    fun loadProducts() {
-        _productsResult.value = Result.Success(products)
+
+    fun loadProducts(lifecycleOwner: LifecycleOwner) {
+        val workConstraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        val workRequest = PeriodicWorkRequestBuilder<LoadProductsWorker>(1, TimeUnit.HOURS)
+            .setConstraints(workConstraints)
+            .build()
+
+        workManager.enqueueUniquePeriodicWork(
+            "loadProducts",
+            ExistingPeriodicWorkPolicy.CANCEL_AND_REENQUEUE,
+            workRequest
+        )
+
+        workManager.getWorkInfoByIdLiveData(workRequest.id).observe(lifecycleOwner) {
+            loadProductsFromDb()
+        }
+    }
+
+    private fun loadProductsFromDb() {
+        CoroutineScope(Dispatchers.IO).launch {
+            val products = databaseHandle.productDao().getAllProducts()
+            if (products.isEmpty()) {
+                updateProductsResult(Result.Error("No products available"))
+            } else {
+                updateProductsResult(Result.Success(products))
+            }
+        }
+    }
+
+    private suspend fun updateProductsResult(result: Result<List<Product>>) {
+        withContext(Dispatchers.Main) {
+            _productsResult.value = result
+        }
     }
 }

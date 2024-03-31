@@ -7,7 +7,7 @@ import retrofit2.http.GET
 
 object Api {
     private const val BASE_URL: String = "https://kgtttq6tg9.execute-api.us-east-2.amazonaws.com/"
-    const val ENDPOINT: String = "prod/random/"
+    const val ENDPOINT: String = "prod/random"
 
     val apiClient: ProductApiClient by lazy {
         retrofit.create(ProductApiClient::class.java)
