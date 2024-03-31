@@ -8,6 +8,7 @@ import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -39,7 +40,9 @@ class ProductsViewModel(
         )
 
         workManager.getWorkInfoByIdLiveData(workRequest.id).observe(lifecycleOwner) {
-            loadProductsFromDb()
+            if (it != null && it.state == WorkInfo.State.ENQUEUED) {
+                loadProductsFromDb()
+            }
         }
     }
 

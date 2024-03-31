@@ -9,13 +9,17 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.Button
+import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -34,7 +38,7 @@ fun ProductsScreen(
         )
     )
 ) {
-    val productsResult: MutableState<Result<List<Product>>> = remember {
+    var productsResult: Result<List<Product>> by remember {
         mutableStateOf(
             Result.Success(
                 listOf()
@@ -42,16 +46,50 @@ fun ProductsScreen(
         )
     }
 
-    viewModel.productsResult.observe(LocalLifecycleOwner.current) { result ->
-        productsResult.value = result
+    var loading by remember { mutableStateOf(true) }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    viewModel.productsResult.observe(lifecycleOwner) { result ->
+        productsResult = result
+        loading = false
     }
 
     viewModel.loadProducts(LocalLifecycleOwner.current)
-    when (val result = productsResult.value) {
-        is Result.Error -> Toast.makeText(LocalContext.current, result.msg, Toast.LENGTH_LONG)
-            .show()
 
-        is Result.Success -> ProductList(list = result.value, modifier = Modifier.fillMaxWidth())
+    ProductsScreen(
+        productsResult = productsResult,
+        loading = loading,
+        onRefresh = { loading = true; viewModel.loadProducts(lifecycleOwner) }
+    )
+}
+
+@Composable
+fun ProductsScreen(productsResult: Result<List<Product>>, loading: Boolean, onRefresh: () -> Unit) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Button(onClick = onRefresh) {
+            Text(text = "Refresh Products")
+        }
+
+        if (loading) {
+            CircularProgressIndicator(modifier = Modifier.width(64.dp))
+        } else {
+            when (productsResult) {
+                is Result.Error -> Toast.makeText(
+                    LocalContext.current,
+                    productsResult.msg,
+                    Toast.LENGTH_LONG
+                )
+                    .show()
+
+                is Result.Success -> ProductList(
+                    list = productsResult.value,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
     }
 }
 
